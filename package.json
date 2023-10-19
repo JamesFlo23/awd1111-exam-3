@@ -20,7 +20,9 @@
     "start-dev": "nodemon -r dotenv/config server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["products"],
+  "keywords": [
+    "products"
+  ],
   "author": "James Florez",
   "license": "MIT"
 }

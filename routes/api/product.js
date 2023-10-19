@@ -37,83 +37,106 @@ router.get('/list',async (req,res)=>{
 
 router.get('/id/:id',validParams(checkIdSchema),async (req,res)=>{
     const id = req.params.id;
+    if(!id){
+        res.status(400).json({error: `Enter an id of a product.`});
+    }else{
     try{
         const product = await getProductById(id);
-        res.status(200).json(product);
+        if(!product){
+            res.status(404).json({error: `Enter a valid id of a product.`});
+        }else{
+            res.status(200).json(product);
+        }
     }catch(err){
-        res.status(400).json({error:err.stack});
+        res.status(500).json({error:err.stack, result:`Not a valid id.`});
+    }
     }
 });
 router.get('/name/:name',validParams(checkNameSchema),async(req,res)=>{
     const name = req.params.name;
+    if(!name){
+        res.status(400).json({error: `Enter a name of a product.`})
+    }else{
     try{
         const product = await getProductByName(name);
-        res.status(200).json(product);
+        if(!product){
+            res.status(404).json({error: `Enter a valid name of a product.`});
+        }else{
+            res.status(200).json(product);
+        }
     }catch(err){
-        res.status(400).json({error:err.stack});
+        res.status(500).json({error:err.stack, result:`Not a valid name.`});
+    }
     }
 });
 
 router.post('/new',validBody(newProductSchema),async(req,res)=>{
     const product = req.body;
     if(!product.name || !product.description || !product.category || !product.price ){
-        res.status(400).json({ error: 'Missing or invalid data for a new product' });
+        res.status(404).json({ error: 'Missing or invalid data for a new product' });
     }
     else if(parseFloat(product.price) < 0.50){
-        res.status(401).json({error: 'Minimum product price is 50 cents.'});
+        res.status(400).json({error: 'Minimum product price is 50 cents.'});
     }
     else{
+        try{
         const results = await addNewProduct(product);
-        if (results.productExists) {
-            res.status(402).json({ error: 'Product Already Exists' });
+        if (results.productExists || !results) {
+            res.status(404).json({ error: 'Product Already Exists' });
         } else {
         res.status(200).json({result: results.result, addedProduct: product})
+        }
+        }catch(err){
+            res.status(500).json({error: `An error occurred while processing your request.`});
         }
     }
 });
 router.put('/:id',validParams(checkIdSchema),async (req,res)=>{
     const id = req.params.id;
-    const productIdFound = await getProductById(id);
-    if(!productIdFound){
-        res.status(405).json({error: `Product ${id} not found.`});
-    }else{
-        const {name,description,category,price} = req.body;
-        const updatedProduct = {
-            name: name || productIdFound.name,
-            description: description || productIdFound.description,
-            category: category || productIdFound.category,
-            price: price || productIdFound.price,
-            lastUpdatedOn: new Date()
-        };
-        if(req.body._id || req.body.id){
-            res.status(404).json({error: `Cannot reassign the product id here.`});
-        }
-        try{
-            const result = await updateProduct(id,updatedProduct);
-            if(result.modifiedCount == 1){
-                res.status(200).json({message: `Product ${id} updated!`});
-            }else{
-                res.status(403).json({error: `You can only update the product name, description, category or price.`})
+    try{
+        const productIdFound = await getProductById(id);
+        if(!productIdFound){
+            res.status(404).json({error: `Product ${id} not found.`});
+        }else{
+            const {name,description,category,price} = req.body;
+            const updatedProduct = {
+                name: name || productIdFound.name,
+                description: description || productIdFound.description,
+                category: category || productIdFound.category,
+                price: price || productIdFound.price,
+                lastUpdatedOn: new Date()
+            };
+            if(req.body._id || req.body.id){
+                res.status(400).json({error: `Cannot reassign the product id here.`});
             }
-
-        }catch(error){
-            console.error(error);
-            res.status(500).json({error: `An error occurred while processing your request.`});
+                const result = await updateProduct(id,updatedProduct);
+                if(result.modifiedCount == 1){
+                    res.status(200).json({message: `Product ${id} updated!`});
+                }else{
+                    res.status(404).json({error: `You can only update the product name, description, category or price.`})
+                }
         }
+    }catch(err){
+        console.error(err);
+        res.status(500).json({error: `An error occurred while processing your request.`});     
     }
 });
 router.delete('/:id',validParams(checkIdSchema),async (req,res)=>{
     const id = req.params.id;
-    try{
-        const deletedResult = await deleteProduct(id);
-        if(deletedResult.productExists){
-            res.status(200).json(`Product ${id} deleted from inventory.`)
-        }else{
-            res.status(400).json({error:"An error occurred while processing your request."});
+    if(!id){
+        res.status(400).json({error: `Enter an id of a product.`});
+    }else{
+        try{
+            const deletedResult = await deleteProduct(id);
+            if(deletedResult.productExists){
+                res.status(200).json(`Product ${id} deleted from inventory.`)
+            }else{
+                res.status(404).json({error:"An error occurred while processing your request."});
+            }
+        }catch(err){
+            console.log(err)
+            res.status(500).json({error:"An error occurred while processing your request."})
         }
-    }catch(err){
-        console.log(err)
-        res.status(401).json({error:"An error occurred while processing your request."})
     }
 });
 
