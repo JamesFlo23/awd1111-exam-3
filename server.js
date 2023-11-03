@@ -6,12 +6,23 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import {ProductRouter} from './routes/api/product.js';
+import {UserRouter} from './routes/api/user.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+import cookieParser from 'cookie-parser';
+import { authMiddleware } from '@merlin4/express-auth';
 
 const app = express();
+app.use(cookieParser());
+app.use(authMiddleware(process.env.JWT_SECRET,'authToken',{
+  httpOnly: true,
+  maxAge:1000*60*60
+}));
+
+app.use(express.urlencoded({extended: true}));
 app.use('/api/product',ProductRouter);
+app.use('/api/user',UserRouter);
 const dbUrl = process.env.DB_URL;
 
 //register routes

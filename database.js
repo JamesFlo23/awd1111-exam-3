@@ -25,27 +25,25 @@ async function ping(){
     debugDb(ping);
 }
 
+//Products
 async function getProducts(){
     const db = await connect();
     const products = await db.collection('Product').find().toArray();
     debugDb('Got Products.');
     return products;
 }
-
 async function getProductById(id){
     const db = await connect();
     const product = await db.collection('Product').findOne({ _id: newId(id) });
     debugDb('Got product by ID');
     return product;
 }
-
 async function getProductByName(name){
     const db = await connect();
     const product = await db.collection('Product').findOne({ name: name });
     debugDb('Got product by name');
     return product;
 }
-
 async function addNewProduct(product){
     const db = await connect();
     const existingProduct = await db.collection('Product').findOne({ name: product.name});
@@ -59,14 +57,12 @@ async function addNewProduct(product){
     const addedProduct = await db.collection('Product').findOne({_id:product._id});
     return {result: result, addedProduct: addedProduct};
 }
-
 async function updateProduct(id,updatedProduct){
     const db = await connect();
     const result = await db.collection('Product').updateOne({_id: newId(id)},{$set:{...updatedProduct}});
     debugDb('Product updated');
     return result;
 }
-
 async function deleteProduct(id){
     const db = await connect();
     const deletedIdFound = await db.collection('Product').findOne({_id: newId(id)});
@@ -79,8 +75,80 @@ async function deleteProduct(id){
     }
 }
 
+//Users
+async function getUsers() {
+    const db = await connect();
+    const users = await db.collection('User').find().toArray();
+    debugDb('Got users.');
+    return users;
+}
+async function getUserById(id){
+    const db = await connect();
+    const user = await db.collection('User').findOne({
+        _id: newId(id),
+    });
+    debugDb('Got user by id');
+    return user;
+}
+async function addNewUser(user){
+    const db = await connect();
+    const existingUser = await db.collection('User').findOne({
+        email:user.email,
+    });
+    if(existingUser != null){
+        return{
+            userExists: true,
+            userAdded: false,
+        };
+    }
+    const result = await db.collection('User').insertOne(user);
+    const addedUser = await db.collection('User').findOne({
+        _id:user._id,
+    });
+    return{
+        result: result,
+        userAdded: true,
+        addedUser: addedUser,
+    };
+}
+async function loginUser(user){
+    const db = await connect();
+    const existingUser = await db.collection('User').findOne({email:user.email});
+    if(!existingUser){
+        return {
+            userExists: false,
+        };
+    }else{
+        return{
+            userExists: true,
+            user: existingUser,
+        };
+    }
+}
+async function updateUser(userId,updatedUser){
+    const db = await connect();
+    const result = await db.collection('User').updateOne(
+        { _id: newId(userId),
+        },    
+        { $set: {...updatedUser,},
+        }
+    );
+    debugDb('User updated');
+    return result;
+}
 export {
-    getProducts,getProductById,getProductByName,addNewProduct,updateProduct,deleteProduct
+    getProducts,
+    getProductById,
+    getProductByName,
+    addNewProduct,
+    updateProduct,
+    deleteProduct,
+
+    getUsers,
+    getUserById,
+    addNewUser,
+    loginUser,
+    updateUser,
 }
 
 ping();

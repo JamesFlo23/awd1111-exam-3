@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "@merlin4/express-auth": "^0.0.5",
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.6",
     "debug": "^4.3.4",
     "dotenv": "^16.3.1",
     "eslint": "^8.51.0",
@@ -7,6 +10,7 @@
     "html-validate": "^8.6.0",
     "init": "^0.1.2",
     "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.1.0",
     "stylelint": "^15.11.0"
   },

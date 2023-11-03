@@ -3,7 +3,7 @@ const router = express.Router();
 import debug from 'debug';
 const debugProduct = debug('app.ProductRouter');
 import { getProducts,getProductById,getProductByName,addNewProduct,updateProduct,deleteProduct } from '../../database.js';
-import { ObjectId } from 'mongodb';
+//import { ObjectId } from 'mongodb';
 import {validBody} from '../../middleware/validBody.js';
 import {validParams} from '../../middleware/validId.js';
 import Joi from 'joi';
@@ -34,7 +34,6 @@ router.get('/list',async (req,res)=>{
         console.log(err);
     }
 });
-
 router.get('/id/:id',validParams(checkIdSchema),async (req,res)=>{
     const id = req.params.id;
     if(!id){
@@ -69,7 +68,6 @@ router.get('/name/:name',validParams(checkNameSchema),async(req,res)=>{
     }
     }
 });
-
 router.post('/new',validBody(newProductSchema),async(req,res)=>{
     const product = req.body;
     if(!product.name || !product.description || !product.category || !product.price ){
@@ -139,5 +137,4 @@ router.delete('/:id',validParams(checkIdSchema),async (req,res)=>{
         }
     }
 });
-
 export { router as ProductRouter };
