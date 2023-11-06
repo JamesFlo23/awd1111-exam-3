@@ -48,9 +48,17 @@ router.get('/list',async (req,res) =>{
       let { keywords, role, minAge, maxAge, sortBy, pageSize, pageNumber } = req.query;
       const match = {};
       let sort = { fullName: 1 };
+      if (keywords) {
+        match.$text = { $search: keywords };
+      }
+  
+      if (role) {
+        match.role = { $eq: role };
+      }
 
-      
 try {
+
+
     const users = await getUsers();
     res.status(200).json(users);
     console.log(users);
