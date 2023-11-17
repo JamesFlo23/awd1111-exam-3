@@ -7,6 +7,7 @@ import { getProducts,getProductById,getProductByName,addNewProduct,updateProduct
 import {validBody} from '../../middleware/validBody.js';
 import {validParams} from '../../middleware/validId.js';
 import Joi from 'joi';
+import {isLoggedIn} from '@merlin4/express-auth';
 
 const newProductSchema = Joi.object({
     name:Joi.string().trim().min(1).max(100).required(),
@@ -23,7 +24,7 @@ const checkNameSchema = Joi.object({
 
 router.use(express.urlencoded({extended:false}));
 
-router.get('/list',async (req,res)=>{
+router.get('/list',isLoggedIn(),async (req,res)=>{
     debugProduct('Product list route hit.');
     try{
         const products = await getProducts();
@@ -34,7 +35,7 @@ router.get('/list',async (req,res)=>{
         console.log(err);
     }
 });
-router.get('/id/:id',validParams(checkIdSchema),async (req,res)=>{
+router.get('/id/:id',isLoggedIn(),validParams(checkIdSchema),async (req,res)=>{
     const id = req.params.id;
     if(!id){
         res.status(400).json({error: `Enter an id of a product.`});
@@ -51,7 +52,7 @@ router.get('/id/:id',validParams(checkIdSchema),async (req,res)=>{
     }
     }
 });
-router.get('/name/:name',validParams(checkNameSchema),async(req,res)=>{
+router.get('/name/:name',isLoggedIn(),validParams(checkNameSchema),async(req,res)=>{
     const name = req.params.name;
     if(!name){
         res.status(400).json({error: `Enter a name of a product.`})
@@ -68,7 +69,7 @@ router.get('/name/:name',validParams(checkNameSchema),async(req,res)=>{
     }
     }
 });
-router.post('/new',validBody(newProductSchema),async(req,res)=>{
+router.post('/new',isLoggedIn(),validBody(newProductSchema),async(req,res)=>{
     const product = req.body;
     if(!product.name || !product.description || !product.category || !product.price ){
         res.status(404).json({ error: 'Missing or invalid data for a new product' });
@@ -89,7 +90,7 @@ router.post('/new',validBody(newProductSchema),async(req,res)=>{
         }
     }
 });
-router.put('/:id',validParams(checkIdSchema),async (req,res)=>{
+router.put('/:id',isLoggedIn(),validParams(checkIdSchema),async (req,res)=>{
     const id = req.params.id;
     try{
         const productIdFound = await getProductById(id);
@@ -119,7 +120,7 @@ router.put('/:id',validParams(checkIdSchema),async (req,res)=>{
         res.status(500).json({error: `An error occurred while processing your request.`});     
     }
 });
-router.delete('/:id',validParams(checkIdSchema),async (req,res)=>{
+router.delete('/:id',isLoggedIn(),validParams(checkIdSchema),async (req,res)=>{
     const id = req.params.id;
     if(!id){
         res.status(400).json({error: `Enter an id of a product.`});

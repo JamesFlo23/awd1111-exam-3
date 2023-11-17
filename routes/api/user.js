@@ -9,6 +9,7 @@ import {validParams} from '../../middleware/validId.js';
 import Joi from 'joi';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import {isLoggedIn, fetchRoles} from '@merlin4/express-auth';
 
 //Schema Here
 const newUserSchema = Joi.object({
@@ -30,6 +31,11 @@ async function issueAuthToken(user){
     const secret = process.env.JWT_SECRET;
     const options = {expiresIn: '1h'};
 
+    const roles = await fetchRoles(user, role => findRoleByName(role));
+      roles.forEach(role => {
+        debugUser(`The user's role is ${(role.name)}`);
+      });
+
     const authToken = jwt.sign(payload,secret,options);
     return authToken;
 }
@@ -39,15 +45,15 @@ function issueAuthCookie(res,authToken){
 }
 
 //Routes Here
-router.get('/list',async (req,res) =>{
+router.get('/list', isLoggedIn(),async (req,res) =>{
     if(!req.auth){
         res.status(401).json({error:'Not authorized'});
         return;
       }
       
-      let { keywords, role, minAge, maxAge, sortBy, pageSize, pageNumber } = req.query;
+      let { keywords, role, minPrice, maxPrice, sortBy, pageSize, pageNumber } = req.query;
       const match = {};
-      let sort = { fullName: 1 };
+      let sort = { name: 1 };
       if (keywords) {
         match.$text = { $search: keywords };
       }
@@ -55,6 +61,32 @@ router.get('/list',async (req,res) =>{
       if (role) {
         match.role = { $eq: role };
       }
+
+        if (maxPrice && minPrice) {
+          match.price = { $gte: parseFloat(minPrice), $lte: parseFloat(maxPrice) };
+        } else if (minPrice) {
+          match.price = { $gte: parseFloat(minPrice) };
+        } else if (maxPrice) {
+          match.price = { $lte: parseFloat(maxPrice) };
+        }
+
+        switch (sortBy) {
+          case 'name':
+            sort = { name: 1 };
+            break;
+          case 'category':
+            sort = { familyName: 1 };
+            break;
+          case 'lowestPrice':
+            sort = { price: 1 };
+            break;
+          case 'newest':
+            sort = { createdOn: -1 };
+            break;
+          case 'oldest':
+            sort = { createdOn: 1 };
+            break;
+        }
 
 try {
 
@@ -67,7 +99,7 @@ try {
     console.log(err);
   }
 });
-router.get('/me', async (req,res) =>{
+router.get('/me', isLoggedIn(),async (req,res) =>{
   if(!req.auth){
       res.status(401).json({error:'Not authorized'});
       return;
@@ -85,7 +117,7 @@ router.get('/me', async (req,res) =>{
       res.status(400).json({error: 'Invalid user data',err_Message:err.stack});
     }
 });
-router.get('/:id', validParams('id'), async (req,res) => {
+router.get('/:id', isLoggedIn(),validParams('id'), async (req,res) => {
   const userId = req.params.id;
   try {
     const user = await getUserById(userId);
@@ -134,7 +166,7 @@ router.post('/login',validBody(loginUserSchema), async (req,res) =>{
         res.status(500).json({error:err.stack});
     }
 });
-router.put('/me',async (req,res) =>{
+router.put('/me',isLoggedIn(),async (req,res) =>{
   try{
     if(!req.auth){
       res.status(401).json({error:'Not authorized'});
@@ -149,8 +181,8 @@ router.put('/me',async (req,res) =>{
       lastUpdatedBy: req.auth.fullName,
     }
     if(temporaryUser.password){
-      updatedUser.password = bcrypt.hash(temporaryUser.password, 10);
-      debugUser(temporaryUser.password);
+      updatedUser.password = await bcrypt.hash(temporaryUser.password, 10);
+      debugUser(updatedUser.password);
     }
       const result = await updateUser(userId,updatedUser);
       debugUser(`${userId}`);
